@@ -80,7 +80,7 @@ void loop()
     activityLog.save();
     delay(3000);
     // M5.Lcd.printf("Poweroff.\n");
-    M5.Power.lightSleep(0xFFFFFFFFFFFFFFFF);
+    M5.Power.lightSleep(0);
   }
 
   showStatus(now);
