@@ -15,6 +15,7 @@ const int SAVE_INTERVAL_SEC = 5;
 static time_t lastSent = 0;
 const int SEND_INTERVAL_SEC = 60;
 
+static time_t bootTime = 0;
 
 void setup()
 {
@@ -25,7 +26,7 @@ void setup()
   M5.Power.begin();
   // setup wifi
   WiFi.begin(WIFI_SSID, WIFI_PASS);
-  activityLog.load();
+  // activityLog.load();
   M5.Lcd.printf("Initialized.\n");
 }
 
@@ -66,17 +67,22 @@ void loop()
     }
   }
 
-  if (now - lastSaved > SAVE_INTERVAL_SEC)
-  {
-    activityLog.save();
-    lastSaved = now;
+  if (bootTime == 0) {
+    bootTime = now;
+    activityLog.addEntry(now, STATUS_BOOT);
   }
+
+  // if (now - lastSaved > SAVE_INTERVAL_SEC)
+  // {
+  //  activityLog.save();
+  //  lastSaved = now;
+  // }
 
   if (!M5.Power.isCharging())
   {
     // shutdown
     M5.Lcd.printf("Shutdown ... \n");
-    activityLog.addEntry(STATUS_SHUTDOWN);
+    activityLog.addEntry(now, STATUS_SHUTDOWN);
     activityLog.save();
     delay(3000);
     // M5.Lcd.printf("Poweroff.\n");

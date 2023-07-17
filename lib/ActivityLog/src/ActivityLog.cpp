@@ -10,10 +10,10 @@ uint16_t ActivityLog::maxBytes()
   return EEPROM_SIZE;
 }
 
-void ActivityLog::addEntry(byte status)
+void ActivityLog::addEntry(time_t t, byte status)
 {
   ActivityLogEntry entry;
-  entry.time = time(NULL);
+  entry.time = t;
   entry.status = status;
   this->entries.push(entry);
 }

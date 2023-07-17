@@ -57,7 +57,7 @@ class ActivityLog
 public:
   ActivityLog();
   uint16_t maxBytes();
-  void addEntry(byte status);
+  void addEntry(time_t t, byte status);
   bool save();
   bool load();
   void snoop(Print &display, int max_entries);
