@@ -4,7 +4,8 @@
 #include <vector>
 #include <queue>
 #include <deque>
-#include <M5Stack.h>
+
+#include <FS.h>
 
 struct ActivityLogEntry
 {
@@ -18,9 +19,8 @@ struct ActivityLogHeader
   uint16_t size;
 };
 
-const int MAX_LOG_ENTRIES = 100;
-const uint16_t EEPROM_SIZE = sizeof(ActivityLogHeader) + sizeof(ActivityLogEntry) * MAX_LOG_ENTRIES;
-const uint16_t EEPROM_ADDR_BOOTLOG = 0;
+// 200,000 * sizeof(ActivityLogEntry) = 1,600,000 bytes
+const int MAX_LOG_ENTRIES = 200000;
 
 const byte STATUS_BOOT = 1;
 const byte STATUS_SHUTDOWN = 2;
@@ -56,10 +56,9 @@ class ActivityLog
 {
 public:
   ActivityLog();
-  uint16_t maxBytes();
   void addEntry(time_t t, byte status);
-  bool save();
-  bool load();
+  bool save(File& file);
+  bool load(File& file);
   void snoop(Print &display, int max_entries);
 
 private:

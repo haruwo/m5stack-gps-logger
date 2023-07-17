@@ -1,13 +1,8 @@
 #include <ActivityLog.h>
-#include <EEPROM.h>
+#include <FS.h>
 
 ActivityLog::ActivityLog()
 {
-}
-
-uint16_t ActivityLog::maxBytes()
-{
-  return EEPROM_SIZE;
 }
 
 void ActivityLog::addEntry(time_t t, byte status)
@@ -18,46 +13,21 @@ void ActivityLog::addEntry(time_t t, byte status)
   this->entries.push(entry);
 }
 
-bool ActivityLog::save()
+bool ActivityLog::save(File &file)
 {
-  if (!EEPROM.begin(EEPROM_SIZE))
-  {
-    return false;
-  }
-
-  int cur = 0;
-  auto size = this->entries.size();
-
-  ActivityLogHeader header = {
-      .magic = 0xDEAD,
-      .size = (uint16_t)size};
-  EEPROM.put(cur, header);
-  cur += sizeof(ActivityLogHeader);
-
+  ActivityLogHeader header = {0xDEAD, (uint16_t)this->entries.size()};
+  file.write((uint8_t *)&header, sizeof(header));
   for (auto it = this->entries.begin(); it != this->entries.end(); ++it)
   {
-    EEPROM.put(cur, *it);
-    cur += sizeof(ActivityLogEntry);
+    file.write((uint8_t *)&(*it), sizeof(ActivityLogEntry));
   }
-  if (!EEPROM.commit())
-  {
-    return false;
-  }
-  EEPROM.end();
   return true;
 }
 
-bool ActivityLog::load()
+bool ActivityLog::load(File &file)
 {
-  if (!EEPROM.begin(EEPROM_SIZE))
-  {
-    return false;
-  }
-
-  int cur = 0;
   ActivityLogHeader header;
-  EEPROM.get(cur, header);
-  cur += sizeof(ActivityLogHeader);
+  file.read((uint8_t *)&header, sizeof(header));
   if (header.magic != 0xDEAD)
   {
     return false;
@@ -73,11 +43,9 @@ bool ActivityLog::load()
   for (int i = 0; i < header.size; i++)
   {
     ActivityLogEntry entry;
-    EEPROM.get(cur, entry);
-    cur += sizeof(ActivityLogEntry);
+    file.read((uint8_t *)&entry, sizeof(ActivityLogEntry));
     this->entries.push(entry);
   }
-  EEPROM.end();
   return true;
 }
 
