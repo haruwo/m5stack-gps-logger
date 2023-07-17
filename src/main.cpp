@@ -27,7 +27,9 @@ void setup()
   // setup wifi
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   // activityLog.load();
+  delay(1000);
   M5.Lcd.printf("Initialized.\n");
+  delay(500);
 }
 
 void loop()
