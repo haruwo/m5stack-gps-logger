@@ -26,11 +26,11 @@ bool ActivityLog::save()
   }
 
   int cur = 0;
+  auto size = this->entries.size();
 
   ActivityLogHeader header = {
       .magic = 0xDEAD,
-      .size = this->entries.size(),
-  };
+      .size = (uint16_t)size};
   EEPROM.put(cur, header);
   cur += sizeof(ActivityLogHeader);
 
@@ -94,6 +94,21 @@ void ActivityLog::snoop(Print &display, int max_entries)
 
     char timeStr[sizeof("YYYY-MM-DD HH:MM:SS")] = {0};
     strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", localtime(&it->time));
-    display.printf("time: %s, status: %d\n", timeStr, it->status);
+
+    const char *statusStr;
+    switch (it->status)
+    {
+    case STATUS_BOOT:
+      statusStr = "boot";
+      break;
+    case STATUS_SHUTDOWN:
+      statusStr = "shutdown";
+      break;
+    default:
+      statusStr = "unknown";
+      break;
+    }
+
+    display.printf("time: %s, status: %s\n", timeStr, statusStr);
   }
 }
