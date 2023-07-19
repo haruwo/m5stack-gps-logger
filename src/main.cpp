@@ -6,6 +6,7 @@
 
 // put function declarations here:
 void showStatus(time_t now);
+bool isPowerAvailable();
 
 static ActivityLog activityLog;
 
@@ -34,7 +35,6 @@ void setup()
   WiFi.begin(WIFI_SSID, WIFI_PASS);
 
   // ActivityLog
-
   delay(1000);
 
   M5.Lcd.printf("Initialized.\n");
@@ -44,12 +44,27 @@ void setup()
 void loop()
 {
   M5.update();
+  auto wifiStatus = WiFi.status();
+  auto now = time(NULL);
+
   M5.Lcd.fillScreen(BLACK);
   M5.Lcd.setCursor(0, 0);
 
-  auto now = time(NULL);
+  if (!isPowerAvailable())
+  {
+    // shutdown
+    activityLog.addEntry(now, STATUS_SHUTDOWN);
 
-  auto wifiStatus = WiFi.status();
+    if (wifiStatus == WL_CONNECTED) {
+      // send to server
+      M5.Lcd.printf("Send to server ... \n");
+    }
+
+    // sleep 1 min
+    M5.Axp.DeepSleep(1*60*1000*1000);
+    return
+  }
+
   if (wifiStatus == WL_CONNECTED) {
     // time_t: 1000000000 = 2001-09-09 01:46:40 UTC
     if (now < 1000000000) {
@@ -86,22 +101,18 @@ void loop()
   showStatus(now);
   delay(1000);
 
-  // if (!M5.Axp.GetBatteryChargingStatus
-  // {
-  //   // shutdown
-  //   M5.Lcd.printf("Shutdown ... \n");
-  //   activityLog.addEntry(now, STATUS_SHUTDOWN);
-  //   activityLog.save();
-  //   delay(3000);
-  //   // M5.Lcd.printf("Poweroff.\n");
-  //   M5.Power.lightSleep(0);
-  // }
 }
 
 static const uint8_t POWER_STATUS_ACIN_AVAILABLE = 0x40;
 static const uint8_t POWER_STATUS_ACIN_EXISTS = 0x80;
 static const uint8_t POWER_STATUS_VBUS_AVAILABLE = 0x10;
 static const uint8_t POWER_STATUS_VBUS_EXISTS = 0x20;
+
+bool isPowerAvailable()
+{
+  auto powerStatus = M5.Axp.Read8bit(0x00);
+  return powerStatus & POWER_STATUS_ACIN_AVAILABLE || powerStatus & POWER_STATUS_VBUS_AVAILABLE;
+}
 
 // put function definitions here:s
 void showStatus(time_t now)
