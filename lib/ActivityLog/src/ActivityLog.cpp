@@ -1,5 +1,6 @@
-#include <ActivityLog.h>
+#include "ActivityLog.h"
 #include <FS.h>
+#include <pb.h>
 
 ActivityLog::ActivityLog()
 {

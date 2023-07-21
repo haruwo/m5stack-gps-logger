@@ -7,6 +7,8 @@
 
 #include <FS.h>
 
+#include "ActivityLog.pb.h"
+
 struct ActivityLogEntry
 {
   time_t time;
@@ -52,17 +54,54 @@ public:
   const_iterator end() const { return this->c.end(); }
 };
 
-class ActivityLog
-{
+class ActivityLog {
 public:
   ActivityLog();
   void addEntry(time_t t, byte status);
   bool save(File& file);
   bool load(File& file);
   void snoop(Print &display, int max_entries);
+  
+  template<class PublisherFn> bool flush(PublisherFn publisherFn);
 
 private:
   FixedQueue<ActivityLogEntry, MAX_LOG_ENTRIES> entries;
 };
 
 #endif
+
+template <class PublisherFn>
+bool ActivityLog::flush(PublisherFn fn)
+{
+  pb_byte_t buffer[16];
+  while (!this->entries.empty())
+  {
+    ActivityLogEntry entry = this->entries.front();
+
+    auto msg = _LogEntry();
+    msg.time = entry.time;
+    switch (entry.status) {
+      case STATUS_BOOT:
+        msg.status = Status_BOOT;
+        break;
+      case STATUS_SHUTDOWN:
+        msg.status = Status_SHUTDOWN;
+        break;
+      default:
+        msg.status = Status_UNKNONW;
+        break;
+    }
+
+    auto stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
+    auto rc = pb_encode(&stream, LogEntry_fields, &msg);
+    if (!rc)
+    {
+      return false;
+    }
+
+    fn((const char *)buffer, (int)stream.bytes_written);
+    this->entries.pop();
+  }
+
+  return true;
+}

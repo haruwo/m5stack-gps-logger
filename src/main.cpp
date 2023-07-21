@@ -1,12 +1,23 @@
-#include <ActivityLog.h>
 #include <M5StickCPlus.h>
+#undef min
+#undef max
+
 #include <WiFi.h>
 #include <EEPROM.h>
-#include <local_ssid_define.h>
+#include <WiFiClientSecure.h>
+#include <MQTTClient.h>
+#include <ArduinoJson.h>
+#include <ActivityLog.h>
+
+#include "local_ssid_define.h"
+#include "local_secrets.h"
+
+#define AWS_IOT_PUBLISH_TOPIC   "esp32/pub"
 
 // put function declarations here:
 void showStatus(time_t now);
 bool isPowerAvailable();
+bool record(time_t now, uint8_t status);
 
 static ActivityLog activityLog;
 
@@ -14,6 +25,8 @@ static time_t lastSent = 0;
 const int SEND_INTERVAL_SEC = 60;
 
 static time_t bootTime = 0;
+static auto net = WiFiClientSecure();
+static auto client = MQTTClient();
 
 void setup()
 {
@@ -32,10 +45,18 @@ void setup()
   M5.Axp.begin();
 
   // WiFi
+  WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
 
   // ActivityLog
   delay(1000);
+
+  // MQTT
+  net.setCACert(AWS_CERT_CA);
+  net.setCertificate(AWS_CERT_CRT);
+  net.setPrivateKey(AWS_CERT_PRIVATE);
+  client.begin(AWS_IOT_ENDPOINT, 8883, net);
+
 
   M5.Lcd.printf("Initialized.\n");
   delay(500);
@@ -52,17 +73,10 @@ void loop()
 
   if (!isPowerAvailable())
   {
-    // shutdown
-    activityLog.addEntry(now, STATUS_SHUTDOWN);
-
-    if (wifiStatus == WL_CONNECTED) {
-      // send to server
-      M5.Lcd.printf("Send to server ... \n");
-    }
-
+    record(now, STATUS_SHUTDOWN);
     // sleep 1 min
     M5.Axp.DeepSleep(1*60*1000*1000);
-    return
+    return;
   }
 
   if (wifiStatus == WL_CONNECTED) {
@@ -95,7 +109,7 @@ void loop()
 
   if (bootTime == 0) {
     bootTime = now;
-    activityLog.addEntry(now, STATUS_BOOT);
+    record(now, STATUS_BOOT);
   }
 
   showStatus(now);
@@ -131,4 +145,19 @@ void showStatus(time_t now)
   M5.Lcd.printf("Power ACIN: a:%d e:%d\n", powerStatus & POWER_STATUS_ACIN_AVAILABLE ? 1 : 0, powerStatus & POWER_STATUS_ACIN_EXISTS ? 1 : 0);
 
   activityLog.snoop(M5.Lcd, 10);
+}
+
+bool record(time_t now, uint8_t status)
+{
+  activityLog.addEntry(now, status);
+
+  if (WiFi.status() == WL_CONNECTED) {
+    // send to server
+    M5.Lcd.printf("Send to server ... \n");
+    activityLog.flush([](const char* data, int len) {
+      client.publish(AWS_IOT_PUBLISH_TOPIC, data, len);
+    });
+  }
+
+  return true;
 }

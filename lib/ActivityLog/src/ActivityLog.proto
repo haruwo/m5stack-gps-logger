@@ -1,0 +1,13 @@
+syntax = "proto3";
+import "nanopb.proto";
+
+enum Status {
+    UNKNONW = 0;
+    BOOT = 1;
+    SHUTDOWN = 2;
+}
+
+message LogEntry {
+    int64  time   = 1;
+    Status status = 2;
+}
