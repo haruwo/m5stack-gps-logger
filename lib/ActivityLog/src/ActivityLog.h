@@ -25,7 +25,8 @@ struct ActivityLogHeader
 const int MAX_LOG_ENTRIES = 200000;
 
 const byte STATUS_BOOT = 1;
-const byte STATUS_SHUTDOWN = 2;
+const byte STATUS_ALIVE = 2;
+const byte STATUS_SHUTDOWN = 3;
 
 template <typename T, int MaxLen, typename Container = std::deque<T>>
 class FixedQueue : public std::queue<T, Container>
@@ -68,8 +69,6 @@ private:
   FixedQueue<ActivityLogEntry, MAX_LOG_ENTRIES> entries;
 };
 
-#endif
-
 template <class PublisherFn>
 bool ActivityLog::flush(PublisherFn fn)
 {
@@ -93,15 +92,19 @@ bool ActivityLog::flush(PublisherFn fn)
     }
 
     auto stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
-    auto rc = pb_encode(&stream, LogEntry_fields, &msg);
-    if (!rc)
+    if (!pb_encode(&stream, LogEntry_fields, &msg))
     {
       return false;
     }
 
-    fn((const char *)buffer, (int)stream.bytes_written);
+    if (!fn((const char *)buffer, (int)stream.bytes_written))
+    {  
+      return false;
+    }
     this->entries.pop();
   }
 
   return true;
 }
+
+#endif // __LOG_H__

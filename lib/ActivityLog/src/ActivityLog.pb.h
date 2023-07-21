@@ -14,7 +14,8 @@
 typedef enum _Status {
     Status_UNKNONW = 0,
     Status_BOOT = 1,
-    Status_SHUTDOWN = 2
+    Status_ALIVE = 2,
+    Status_SHUTDOWN = 3
 } Status;
 
 /* Struct definitions */
