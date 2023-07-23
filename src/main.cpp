@@ -63,6 +63,8 @@ void setup()
 void loop()
 {
   M5.update();
+  M5.Lcd.setCursor(0, 0);
+
   auto wifiStatus = WiFi.status();
   auto now = time(NULL);
 
@@ -154,12 +156,26 @@ bool record(time_t now, uint8_t status)
   {
     // send to server
     sprite.printf("Send to server ... \n");
+    if (!client.connected()) {
+      sprite.printf("Connecting to MQTT server ... \n");
+      bool rc = client.connect(AWS_IOT_CLIENT_ID);
+      if (!rc) {
+        sprite.printf("Failed to connect to server: %d\n", rc);
+        sprite.printf("Client error: %d\n", client.lastError());
+        return false;
+      }
+    }
     bool rc = activityLog.flush([](const char *data, int len)
-                                { return client.publish(AWS_IOT_PUBLISH_TOPIC, data, len); });
-    if (!rc)
-    {
-      sprite.printf("Failed to send to server: %d\n", rc);
-      sprite.printf("Client error: %d\n", client.lastError());
+                                {
+                                  sprite.printf("Publishing %d bytes\n", len);
+                                  bool rc = client.publish(AWS_IOT_PUBLISH_TOPIC, data, len);
+                                  if (!rc) {
+                                    sprite.printf("Failed to publish to server: %d\n", rc);
+                                    sprite.printf("Client error: %d\n", client.lastError());
+                                  }
+                                  return rc; });
+    if (!rc) {
+      delay(10*1000);
     }
     return rc;
   }

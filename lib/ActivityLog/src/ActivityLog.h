@@ -91,9 +91,11 @@ bool ActivityLog::flush(PublisherFn fn)
         break;
     }
 
+    Serial.printf("pb_encode %d, %d\n", msg.time, msg.status);
     auto stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
     if (!pb_encode(&stream, LogEntry_fields, &msg))
     {
+      Serial.printf("pb_encode failed: %s\n", PB_GET_ERROR(&stream));
       return false;
     }
 
