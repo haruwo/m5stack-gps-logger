@@ -4,7 +4,6 @@
 #ifndef PB_ACTIVITYLOG_PB_H_INCLUDED
 #define PB_ACTIVITYLOG_PB_H_INCLUDED
 #include <pb.h>
-#include <pb_encode.h>
 
 #if PB_PROTO_HEADER_VERSION != 40
 #error Regenerate this file with the current version of nanopb generator.
@@ -14,8 +13,9 @@
 typedef enum _Status {
     Status_UNKNONW = 0,
     Status_BOOT = 1,
-    Status_ALIVE = 2,
-    Status_SHUTDOWN = 3
+    Status_SHUTDOWN = 2,
+    Status_ALIVE = 3,
+    Status_BTN_PRESSED = 4
 } Status;
 
 /* Struct definitions */
@@ -31,8 +31,8 @@ extern "C" {
 
 /* Helper constants for enums */
 #define _Status_MIN Status_UNKNONW
-#define _Status_MAX Status_SHUTDOWN
-#define _Status_ARRAYSIZE ((Status)(Status_SHUTDOWN+1))
+#define _Status_MAX Status_BTN_PRESSED
+#define _Status_ARRAYSIZE ((Status)(Status_BTN_PRESSED+1))
 
 #define LogEntry_status_ENUMTYPE Status
 

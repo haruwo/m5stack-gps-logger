@@ -23,6 +23,7 @@ static ActivityLog activityLog;
 static TFT_eSprite sprite(&M5.Lcd);
 
 static time_t bootTime = 0;
+static time_t lastAliveTime = 0;
 static auto net = WiFiClientSecure();
 static auto client = MQTTClient();
 
@@ -95,12 +96,18 @@ void loop()
   {
     if (bootTime == 0)
     {
-      bootTime = now;
       record(now, STATUS_BOOT);
+      bootTime = now;
+      lastAliveTime = now;
     }
-    else
+    else if (M5.BtnA.wasPressed())
+    {
+      record(now, STATUS_BTN_PRESSED);
+    }
+    else if (lastAliveTime + 60 < now)
     {
       record(now, STATUS_ALIVE);
+      lastAliveTime = now;
     }
 
     showStatus(now);
@@ -112,8 +119,8 @@ void loop()
     }
     else
     {
-      // 15 sec
-      delayMs = 15 * 1000;
+      // 100 ms
+      delayMs = 100;
     }
   }
   sprite.pushSprite(0, 0);

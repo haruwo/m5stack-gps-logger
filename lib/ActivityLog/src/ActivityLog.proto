@@ -5,6 +5,8 @@ enum Status {
     UNKNONW = 0;
     BOOT = 1;
     SHUTDOWN = 2;
+    ALIVE = 3;
+    BTN_PRESSED = 4;
 }
 
 message LogEntry {

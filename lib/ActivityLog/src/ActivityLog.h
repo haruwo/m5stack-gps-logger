@@ -7,6 +7,8 @@
 
 #include <FS.h>
 
+#include <pb.h>
+#include <pb_encode.h>
 #include "ActivityLog.pb.h"
 
 struct ActivityLogEntry
@@ -24,9 +26,10 @@ struct ActivityLogHeader
 // 200,000 * sizeof(ActivityLogEntry) = 1,600,000 bytes
 const int MAX_LOG_ENTRIES = 200000;
 
-const byte STATUS_BOOT = 1;
-const byte STATUS_ALIVE = 2;
-const byte STATUS_SHUTDOWN = 3;
+const byte STATUS_BOOT = Status_BOOT;
+const byte STATUS_ALIVE = Status_ALIVE;
+const byte STATUS_SHUTDOWN = Status_SHUTDOWN;
+const byte STATUS_BTN_PRESSED = Status_BTN_PRESSED;
 
 template <typename T, int MaxLen, typename Container = std::deque<T>>
 class FixedQueue : public std::queue<T, Container>
