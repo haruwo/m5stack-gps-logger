@@ -12,7 +12,7 @@
 #include "local_ssid_define.h"
 #include "local_secrets.h"
 
-#define AWS_IOT_PUBLISH_TOPIC "esp32/pub"
+#define AWS_IOT_PUBLISH_TOPIC "/esp32/gpslogger"
 
 // put function declarations here:
 void showStatus(time_t now);
