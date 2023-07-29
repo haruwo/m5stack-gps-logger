@@ -1,6 +1,5 @@
 #include "ActivityLog.h"
 #include <FS.h>
-#include <pb.h>
 
 ActivityLog::ActivityLog()
 {
@@ -63,21 +62,6 @@ void ActivityLog::snoop(Print &display, int max_entries)
 
     char timeStr[sizeof("YYYY-MM-DD HH:MM:SS")] = {0};
     strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", localtime(&it->time));
-
-    const char *statusStr;
-    switch (it->status)
-    {
-    case STATUS_BOOT:
-      statusStr = "boot";
-      break;
-    case STATUS_SHUTDOWN:
-      statusStr = "shutdown";
-      break;
-    default:
-      statusStr = "unknown";
-      break;
-    }
-
-    display.printf("time: %s, status: %s\n", timeStr, statusStr);
+    display.printf("time: %s, status: %s\n", timeStr, statusNameOf(it->status));
   }
 }

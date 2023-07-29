@@ -6,10 +6,7 @@
 #include <deque>
 
 #include <FS.h>
-
-#include <pb.h>
-#include <pb_encode.h>
-#include "ActivityLog.pb.h"
+#include <ArduinoJson.h>
 
 struct ActivityLogEntry
 {
@@ -26,10 +23,10 @@ struct ActivityLogHeader
 // 200,000 * sizeof(ActivityLogEntry) = 1,600,000 bytes
 const int MAX_LOG_ENTRIES = 200000;
 
-const byte STATUS_BOOT = Status_BOOT;
-const byte STATUS_ALIVE = Status_ALIVE;
-const byte STATUS_SHUTDOWN = Status_SHUTDOWN;
-const byte STATUS_BTN_PRESSED = Status_BTN_PRESSED;
+const byte STATUS_BOOT = 0;
+const byte STATUS_ALIVE = 1;
+const byte STATUS_SHUTDOWN = 2;
+const byte STATUS_BTN_PRESSED = 3;
 
 template <typename T, int MaxLen, typename Container = std::deque<T>>
 class FixedQueue : public std::queue<T, Container>
@@ -58,52 +55,53 @@ public:
   const_iterator end() const { return this->c.end(); }
 };
 
-class ActivityLog {
+class ActivityLog
+{
 public:
   ActivityLog();
   void addEntry(time_t t, byte status);
-  bool save(File& file);
-  bool load(File& file);
+  bool save(File &file);
+  bool load(File &file);
   void snoop(Print &display, int max_entries);
-  
-  template<class PublisherFn> bool flush(PublisherFn publisherFn);
+
+  template <class PublisherFn>
+  bool flush(PublisherFn publisherFn);
 
 private:
   FixedQueue<ActivityLogEntry, MAX_LOG_ENTRIES> entries;
 };
 
+static inline const char *statusNameOf(byte status)
+{
+  switch (status)
+  {
+  case STATUS_BOOT:
+    return "boot";
+  case STATUS_ALIVE:
+    return "alive";
+  case STATUS_SHUTDOWN:
+    return "shutdown";
+  case STATUS_BTN_PRESSED:
+    return "btn_pressed";
+  default:
+    return "unknown";
+  }
+}
+
 template <class PublisherFn>
 bool ActivityLog::flush(PublisherFn fn)
 {
-  pb_byte_t buffer[16];
+  char buffer[128];
   while (!this->entries.empty())
   {
-    ActivityLogEntry entry = this->entries.front();
+    auto entry = this->entries.front();
+    StaticJsonDocument<128> doc;
+    doc["time"] = entry.time;
+    doc["status"] = statusNameOf(entry.status);
 
-    auto msg = _LogEntry();
-    msg.time = entry.time;
-    switch (entry.status) {
-      case STATUS_BOOT:
-        msg.status = Status_BOOT;
-        break;
-      case STATUS_SHUTDOWN:
-        msg.status = Status_SHUTDOWN;
-        break;
-      default:
-        msg.status = Status_UNKNONW;
-        break;
-    }
-
-    Serial.printf("pb_encode %d, %d\n", msg.time, msg.status);
-    auto stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
-    if (!pb_encode(&stream, LogEntry_fields, &msg))
+    size_t len = serializeJson(doc, buffer, sizeof(buffer));
+    if (!fn(buffer, len))
     {
-      Serial.printf("pb_encode failed: %s\n", PB_GET_ERROR(&stream));
-      return false;
-    }
-
-    if (!fn((const char *)buffer, (int)stream.bytes_written))
-    {  
       return false;
     }
     this->entries.pop();
