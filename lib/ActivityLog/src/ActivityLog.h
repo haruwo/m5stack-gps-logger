@@ -88,7 +88,7 @@ static inline const char *statusNameOf(byte status)
   }
 }
 
-template <class PublisherFn>
+template <typename PublisherFn>
 bool ActivityLog::flush(PublisherFn fn)
 {
   char buffer[128];
